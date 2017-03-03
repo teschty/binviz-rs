@@ -82,13 +82,22 @@ fn main() {
         }
     };
 
-    println!("{} duplicate points.", dup);
-
     let display = glutin::WindowBuilder::new().build_glium().unwrap();
+
+    let v_buffer = VertexBuffer::new(&display, &points).unwrap();
+    let indices = index::NoIndices(index::PrimitiveType::Points);
+
+    let frag_shader = include_str!("../res/frag.glsl");
+    let vert_shader = include_str!("../res/vert.glsl");
+    
+    let prog = Program::from_source(&display, vert_shader, frag_shader, None).unwrap();
 
     loop {
         let mut target = display.draw();
-        target.clear_color(0.0, 0.0, 1.0, 1.0);
+        target.clear_color(0.0, 0.0, 0.0, 1.0);
+
+        target.draw(&v_buffer, &indices, &prog, &uniforms::EmptyUniforms, &Default::default()).unwrap();
+        
         target.finish().unwrap();
 
         for ev in display.poll_events() {
