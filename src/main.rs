@@ -111,6 +111,8 @@ fn main() {
     let mut zoom: f32 = 0.8;
 
     let mut last_time = precise_time_s();
+    let mut shift_down = false;
+
     loop {
         let now = precise_time_s();
         let delta = now - last_time;
@@ -138,12 +140,14 @@ fn main() {
         for ev in display.poll_events() {
             match ev {
                 glutin::Event::Closed => return,
-                glutin::Event::KeyboardInput(a, _, b) => {
-                    match b {
-                        Some(glutin::VirtualKeyCode::Z) => {
-                            zoom_target += 1.1;
+                glutin::Event::KeyboardInput(state, _, vk) => {
+                    match vk {
+                        Some(glutin::VirtualKeyCode::LShift) => {
+                            shift_down = state == glutin::ElementState::Pressed;
                         },
-
+                        Some(glutin::VirtualKeyCode::Z) => {
+                            zoom_target += if shift_down { -1.1 } else { 1.1 };
+                        },
                         Some(glutin::VirtualKeyCode::Escape) => {
                             return;
                         },
