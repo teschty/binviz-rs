@@ -1,13 +1,16 @@
 #[macro_use]
 extern crate glium;
+extern crate time;
 
 mod point;
 
 use glium::*;
+use time::precise_time_s;
+
+use point::Point;
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
-use point::Point;
 use std::f32;
 
 fn load_file(file_name: &str) -> io::Result<Vec<Point>> {
@@ -104,8 +107,16 @@ fn main() {
     
     let prog = Program::from_source(&display, vert_shader, frag_shader, None).unwrap();
 
+    let mut zoom_target: f32 = 0.8;
     let mut zoom: f32 = 0.8;
+
+    let mut last_time = precise_time_s();
     loop {
+        let now = precise_time_s();
+        let delta = now - last_time;
+        zoom += (zoom_target - zoom) * delta as f32;
+        last_time = now;
+
         let mut target = display.draw();
         let (width, height) = target.get_dimensions();
 
@@ -115,7 +126,7 @@ fn main() {
             [zoom, 0.0, 0.0, 0.0],
             [0.0, zoom, 0.0, 0.0],
             [0.0, 0.0, zoom, 0.0],
-            [0.0, 0.0, 2.0, 1.0f32],
+            [0.0, 0.0, 3.0, 1.0f32],
         ];
 
         target.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -128,8 +139,16 @@ fn main() {
             match ev {
                 glutin::Event::Closed => return,
                 glutin::Event::KeyboardInput(a, _, b) => {
-                    if b == Some(glutin::VirtualKeyCode::Z) {
-                        zoom += 0.1;
+                    match b {
+                        Some(glutin::VirtualKeyCode::Z) => {
+                            zoom_target += 1.1;
+                        },
+
+                        Some(glutin::VirtualKeyCode::Escape) => {
+                            return;
+                        },
+
+                        _ => {}
                     }
                 },
                 _ => ()
