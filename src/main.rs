@@ -127,6 +127,11 @@ fn main() {
         for ev in display.poll_events() {
             match ev {
                 glutin::Event::Closed => return,
+                glutin::Event::KeyboardInput(a, _, b) => {
+                    if b == Some(glutin::VirtualKeyCode::Z) {
+                        zoom += 0.1;
+                    }
+                },
                 _ => ()
             }
         }
