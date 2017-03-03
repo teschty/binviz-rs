@@ -10,10 +10,12 @@ use std::fs::File;
 use point::Point;
 use std::f32;
 
-fn load_file(file_name: &str) -> io::Result<(Vec<Point>, i32)> {
+fn load_file(file_name: &str) -> io::Result<Vec<Point>> {
     let mut f = File::open(file_name)?;
-    let mut bytes = vec![0; f.metadata()?.len() as usize];//Vec::with_capacity(f.metadata()?.len() as usize);
+    let mut bytes = vec![0; f.metadata()?.len() as usize];
     f.read_exact(&mut bytes).unwrap();
+
+    println!("Read {} bytes", bytes.len());
 
     // pack bytes into int for "easy" sorting
     let mut packed_bytes = Vec::with_capacity(bytes.len() / 3);
@@ -30,12 +32,9 @@ fn load_file(file_name: &str) -> io::Result<(Vec<Point>, i32)> {
 
     let mut points: Vec<Point> = vec![];
 
-    let mut dup = 0;
     let mut prev = -1;
     for packed in packed_bytes {
         if packed == prev {
-            dup += 1;
-
             let i = points.len() - 1;
             points[i].count += 1;
             continue;
@@ -73,7 +72,7 @@ fn load_file(file_name: &str) -> io::Result<(Vec<Point>, i32)> {
         p.color = [color, 1.0 - count, 1.0 - count * color];
     }
 
-    Ok((points, dup))
+    Ok(points)
 }
 
 fn main() {
@@ -85,15 +84,15 @@ fn main() {
         }
     };
 
-    let (points, dup) = match load_file(&name) {
-        Ok(tup) => tup,
+    let points = match load_file(&name) {
+        Ok(p) => p,
         Err(e) => {
             println!("Error loading file: {}", e);
             return;
         }
     };
 
-    println!("{} duplicate points", dup);
+    println!("{} unique points", points.len());
 
     let display = glutin::WindowBuilder::new().build_glium().unwrap();
 
@@ -107,9 +106,13 @@ fn main() {
 
     loop {
         let mut target = display.draw();
+
+        let (width, height) = target.get_dimensions();
+        let p = create_perspective(width, height, 0.1, 1024.0);
+
         target.clear_color(0.0, 0.0, 0.0, 1.0);
 
-        target.draw(&v_buffer, &indices, &prog, &uniforms::EmptyUniforms, &Default::default()).unwrap();
+        target.draw(&v_buffer, &indices, &prog, &uniform! { P: p }, &Default::default()).unwrap();
         
         target.finish().unwrap();
 
@@ -120,4 +123,19 @@ fn main() {
             }
         }
     }
+}
+
+fn create_perspective(width: u32, height: u32, zfar: f32, znear: f32) -> [[f32; 4]; 4] {
+    let aspect_ratio = height as f32 / width as f32;
+
+    let fov: f32 = 3.141592 / 3.0;
+
+    let f = 1.0 / (fov / 2.0).tan();
+
+    [
+        [f *   aspect_ratio   ,    0.0,              0.0              ,   0.0],
+        [         0.0         ,     f ,              0.0              ,   0.0],
+        [         0.0         ,    0.0,  (zfar+znear)/(zfar-znear)    ,   1.0],
+        [         0.0         ,    0.0, -(2.0*zfar*znear)/(zfar-znear),   0.0],
+    ]
 }
