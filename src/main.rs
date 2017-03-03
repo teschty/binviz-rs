@@ -20,9 +20,9 @@ fn load_file(file_name: &str) -> io::Result<Vec<Point>> {
     // pack bytes into int for "easy" sorting
     let mut packed_bytes = Vec::with_capacity(bytes.len() / 3);
     for i in 0..(bytes.len() / 3) - 1 {
-        let mut buf: i32 = bytes[i * 3] as i32;
+        let mut buf: i32 = bytes[i * 3 + 2] as i32;
         buf = (buf << 8) + bytes[i * 3 + 1] as i32;
-        buf = (buf << 8) + bytes[i * 3 + 2] as i32;
+        buf = (buf << 8) + bytes[i * 3 + 0] as i32;
 
         packed_bytes.push(buf);
     }
