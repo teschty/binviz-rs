@@ -11,14 +11,12 @@ use point::Point;
 use std::f32;
 
 fn load_file(file_name: &str) -> io::Result<(Vec<Point>, i32)> {
-    let f = File::open(file_name)?;
-    let bytes: Vec<u8> = f
-        .bytes()
-        .map(|r| r.unwrap())
-        .collect();
+    let mut f = File::open(file_name)?;
+    let mut bytes = vec![0; f.metadata()?.len() as usize];//Vec::with_capacity(f.metadata()?.len() as usize);
+    f.read_exact(&mut bytes).unwrap();
 
     // pack bytes into int for "easy" sorting
-    let mut packed_bytes = vec![];
+    let mut packed_bytes = Vec::with_capacity(bytes.len() / 3);
     for i in 0..(bytes.len() / 3) - 1 {
         let mut buf: i32 = bytes[i * 3] as i32;
         buf = (buf << 8) + bytes[i * 3 + 1] as i32;
@@ -40,6 +38,7 @@ fn load_file(file_name: &str) -> io::Result<(Vec<Point>, i32)> {
 
             let i = points.len() - 1;
             points[i].count += 1;
+            continue;
         }
 
         let x = ((packed >> 16) & 0xFF) as f32 / 255.0;
@@ -56,10 +55,22 @@ fn load_file(file_name: &str) -> io::Result<(Vec<Point>, i32)> {
 
         points.push(Point {
             pos: [x, y, z],
+            color: [0.0, 0.0, 0.0],
             count: 0
         });
 
         prev = packed;
+    }
+
+    let len = points.len();
+    for i in 0..len {
+        let ref mut p = points[i];
+
+        let count = p.count as f32 / 10.0;
+        let color = i as f32 / len as f32;
+
+        // same strange coloring scheme
+        p.color = [color, 1.0 - count, 1.0 - count * color];
     }
 
     Ok((points, dup))
@@ -81,6 +92,8 @@ fn main() {
             return;
         }
     };
+
+    println!("{} duplicate points", dup);
 
     let display = glutin::WindowBuilder::new().build_glium().unwrap();
 
