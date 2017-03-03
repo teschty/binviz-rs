@@ -1,0 +1,6 @@
+[package]
+name = "binviz-rs"
+version = "0.1.0"
+authors = ["Tyler Tesch <tytesch@gmail.com>"]
+
+[dependencies]
