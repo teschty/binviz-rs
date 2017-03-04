@@ -115,7 +115,9 @@ fn main() {
     let mut last_time = precise_time_s();
     let mut shift_down = false;
 
-    let mut x: f32 = 0.0;
+    let mut rot_x: f32 = 0.0;
+    let mut rot_y: f32 = 0.0;
+    let mut rot_z: f32 = 0.0;
 
     loop {
         let now = precise_time_s();
@@ -127,17 +129,37 @@ fn main() {
         let (width, height) = target.get_dimensions();
         let aspect = width as f32 / height as f32;
 
-        // let p: [[f32; 4]; 4] = PerspMat3::new(aspect, 45.0, 0.0001, 100.0).to_mat().into();
-        // let p = create_perspective(width, height);
-        // let p: [[f32; 4]; 4] = cgmath::perspective(cgmath::Deg(90.0), aspect, 0.0001, 1024.0).into();
         let p: [[f32; 4]; 4] = cgmath::ortho(-aspect, aspect, -1.0, 1.0, 5.0, -5.0).into();
 
-        let m = [
-            [zoom, 0.0, 0.0, 0.0],
-            [0.0, zoom, 0.0, 0.0],
-            [0.0, 0.0, zoom, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32],
-        ];
+        let scale = cgmath::Matrix4::new(
+            zoom, 0.0, 0.0, 0.0,
+            0.0, zoom, 0.0, 0.0,
+            0.0, 0.0, zoom, 0.0,
+            0.00, 0.0, 0.0, 1.0f32,
+        ); 
+
+        let m_rot_x = cgmath::Matrix4::new(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, rot_x.cos(), -rot_x.sin(), 0.0,
+            0.0, rot_x.sin(), rot_x.cos(), 0.0, 
+            0.0, 0.0, 0.0, 1.0, 
+        );
+
+        let m_rot_y = cgmath::Matrix4::new(
+            rot_y.cos(), 0.0, rot_y.sin(), 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            -rot_y.sin(), 0.0, rot_y.cos(), 0.0, 
+            0.0, 0.0, 0.0, 1.0, 
+        );
+
+        let m_rot_z = cgmath::Matrix4::new(
+            rot_z.cos(), -rot_z.sin(), 0.0, 0.0,
+            rot_z.sin(), rot_z.cos(), 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0, 
+            0.0, 0.0, 0.0, 1.0, 
+        );
+
+        let m: [[f32; 4]; 4] = (scale * m_rot_z * m_rot_y * m_rot_x).into();
 
         target.clear_color(0.0, 0.0, 0.0, 1.0);
 
@@ -146,21 +168,25 @@ fn main() {
         target.finish().unwrap();
 
         for ev in display.poll_events() {
+            use glutin::{VirtualKeyCode, ElementState, Event};
+
             match ev {
-                glutin::Event::Closed => return,
-                glutin::Event::KeyboardInput(state, _, vk) => {
+                Event::Closed => return,
+                Event::KeyboardInput(state, _, vk) => {
                     match vk {
-                        Some(glutin::VirtualKeyCode::LShift) => {
-                            shift_down = state == glutin::ElementState::Pressed;
+                        Some(VirtualKeyCode::LShift) => {
+                            shift_down = state == ElementState::Pressed;
                         },
-                        Some(glutin::VirtualKeyCode::Z) => {
-                            zoom_target += if shift_down { -1.1 } else { 1.1 };
+                        Some(VirtualKeyCode::Z) => {
+                            zoom_target += if shift_down { -0.5 } else { 0.5 };
                         },
-                        Some(glutin::VirtualKeyCode::Escape) => {
+                        Some(VirtualKeyCode::Escape) => {
                             return;
                         },
-                        Some(glutin::VirtualKeyCode::V) => {
-                            x += 0.01;
+                        Some(VirtualKeyCode::V) => {
+                            rot_x += 0.01;
+                            rot_y += 0.01;
+                            rot_z += 0.01;
                         },
 
                         _ => {}
