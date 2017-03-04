@@ -1,10 +1,12 @@
 #[macro_use]
 extern crate glium;
 extern crate time;
+extern crate cgmath;
 
 mod point;
 
 use glium::*;
+use cgmath::prelude::*;
 use time::precise_time_s;
 
 use point::Point;
@@ -113,6 +115,8 @@ fn main() {
     let mut last_time = precise_time_s();
     let mut shift_down = false;
 
+    let mut x: f32 = 0.0;
+
     loop {
         let now = precise_time_s();
         let delta = now - last_time;
@@ -121,14 +125,18 @@ fn main() {
 
         let mut target = display.draw();
         let (width, height) = target.get_dimensions();
+        let aspect = width as f32 / height as f32;
 
-        let p = create_perspective(width, height);
+        // let p: [[f32; 4]; 4] = PerspMat3::new(aspect, 45.0, 0.0001, 100.0).to_mat().into();
+        // let p = create_perspective(width, height);
+        // let p: [[f32; 4]; 4] = cgmath::perspective(cgmath::Deg(90.0), aspect, 0.0001, 1024.0).into();
+        let p: [[f32; 4]; 4] = cgmath::ortho(-aspect, aspect, -1.0, 1.0, 5.0, -5.0).into();
 
         let m = [
             [zoom, 0.0, 0.0, 0.0],
             [0.0, zoom, 0.0, 0.0],
             [0.0, 0.0, zoom, 0.0],
-            [0.0, 0.0, 3.0, 1.0f32],
+            [0.0, 0.0, 0.0, 1.0f32],
         ];
 
         target.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -150,6 +158,9 @@ fn main() {
                         },
                         Some(glutin::VirtualKeyCode::Escape) => {
                             return;
+                        },
+                        Some(glutin::VirtualKeyCode::V) => {
+                            x += 0.01;
                         },
 
                         _ => {}

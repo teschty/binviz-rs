@@ -6,3 +6,4 @@ authors = ["Tyler Tesch <tytesch@gmail.com>"]
 [dependencies]
 glium = "*"
 time = "*"
+cgmath = "*"
