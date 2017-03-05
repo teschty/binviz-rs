@@ -112,24 +112,34 @@ fn main() {
     let mut zoom_target: f32 = 0.8;
     let mut zoom: f32 = 0.8;
 
-    let mut last_time = precise_time_s();
     let mut shift_down = false;
+    let mut mouse_down = false;
+    let mut last_mouse_pos = (0i32, 0i32);
 
     let mut rot_x: f32 = 0.0;
     let mut rot_y: f32 = 0.0;
     let mut rot_z: f32 = 0.0;
 
+    let mut target_rot_x: f32 = 0.0;
+    let mut target_rot_z: f32 = 0.0;
+
+    let mut last_time = precise_time_s();
+
     loop {
         let now = precise_time_s();
         let delta = now - last_time;
+
         zoom += (zoom_target - zoom) * delta as f32;
+        rot_x += (target_rot_x - rot_x) * delta as f32;
+        rot_z += (target_rot_z - rot_z) * delta as f32;
+
         last_time = now;
 
         let mut target = display.draw();
         let (width, height) = target.get_dimensions();
         let aspect = width as f32 / height as f32;
 
-        let p: [[f32; 4]; 4] = cgmath::ortho(-aspect, aspect, -1.0, 1.0, 5.0, -5.0).into();
+        let p: [[f32; 4]; 4] = cgmath::ortho(-aspect, aspect, -1.0, 1.0, -1024.0, 1024.0).into();
 
         let scale = cgmath::Matrix4::new(
             zoom, 0.0, 0.0, 0.0,
@@ -145,12 +155,12 @@ fn main() {
             0.0, 0.0, 0.0, 1.0, 
         );
 
-        let m_rot_y = cgmath::Matrix4::new(
-            rot_y.cos(), 0.0, rot_y.sin(), 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            -rot_y.sin(), 0.0, rot_y.cos(), 0.0, 
-            0.0, 0.0, 0.0, 1.0, 
-        );
+        // let m_rot_y = cgmath::Matrix4::new(
+        //     rot_y.cos(), 0.0, rot_y.sin(), 0.0,
+        //     0.0, 1.0, 0.0, 0.0,
+        //     -rot_y.sin(), 0.0, rot_y.cos(), 0.0, 
+        //     0.0, 0.0, 0.0, 1.0, 
+        // );
 
         let m_rot_z = cgmath::Matrix4::new(
             rot_z.cos(), -rot_z.sin(), 0.0, 0.0,
@@ -159,16 +169,14 @@ fn main() {
             0.0, 0.0, 0.0, 1.0, 
         );
 
-        let m: [[f32; 4]; 4] = (scale * m_rot_z * m_rot_y * m_rot_x).into();
+        let m: [[f32; 4]; 4] = (scale * m_rot_z * m_rot_x).into();
 
         target.clear_color(0.0, 0.0, 0.0, 1.0);
-
         target.draw(&v_buffer, &indices, &prog, &uniform! { P: p, M: m }, &Default::default()).unwrap();
-        
         target.finish().unwrap();
 
         for ev in display.poll_events() {
-            use glutin::{VirtualKeyCode, ElementState, Event};
+            use glutin::{VirtualKeyCode, ElementState, Event, MouseButton};
 
             match ev {
                 Event::Closed => return,
@@ -185,32 +193,30 @@ fn main() {
                         },
                         Some(VirtualKeyCode::V) => {
                             rot_x += 0.01;
-                            rot_y += 0.01;
                             rot_z += 0.01;
                         },
 
                         _ => {}
                     }
                 },
+
+                Event::MouseInput(state, button) => {
+                    if button == MouseButton::Left {
+                        mouse_down = state == ElementState::Pressed;
+                    }
+                },
+
+                Event::MouseMoved(x, y) => {
+                    if mouse_down {
+                        target_rot_z -= (x - last_mouse_pos.0) as f32 / width as f32;
+                        target_rot_x -= (y - last_mouse_pos.1) as f32 / height as f32;
+                    }
+
+                    last_mouse_pos = (x, y);
+                },
+
                 _ => ()
             }
         }
     }
-}
-
-fn create_perspective(width: u32, height: u32) -> [[f32; 4]; 4] {
-    let aspect_ratio = height as f32 / width as f32;
-
-    let fov: f32 = 3.141592 / 3.0;
-    let znear = 0.1;
-    let zfar = 1024.0;
-
-    let f = 1.0 / (fov / 2.0).tan();
-
-    [
-        [  f  *  aspect_ratio ,    0.0,              0.0              ,   0.0],
-        [         0.0         ,     f ,              0.0              ,   0.0],
-        [         0.0         ,    0.0,  (zfar+znear)/(zfar-znear)    ,   1.0],
-        [         0.0         ,    0.0, -(2.0*zfar*znear)/(zfar-znear),   0.0],
-    ]
 }
