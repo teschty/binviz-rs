@@ -155,13 +155,6 @@ fn main() {
             0.0, 0.0, 0.0, 1.0, 
         );
 
-        // let m_rot_y = cgmath::Matrix4::new(
-        //     rot_y.cos(), 0.0, rot_y.sin(), 0.0,
-        //     0.0, 1.0, 0.0, 0.0,
-        //     -rot_y.sin(), 0.0, rot_y.cos(), 0.0, 
-        //     0.0, 0.0, 0.0, 1.0, 
-        // );
-
         let m_rot_z = cgmath::Matrix4::new(
             rot_z.cos(), -rot_z.sin(), 0.0, 0.0,
             rot_z.sin(), rot_z.cos(), 0.0, 0.0,
